@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { PageLayout } from "@/components/Layout/PageLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -14,10 +14,17 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { toPng } from "html-to-image";
 
 const Insights = () => {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [timeRange, setTimeRange] = useState<"day" | "week" | "month" | "year">("week");
+  
+  // Create refs for each chart container
+  const categoriesChartRef = useRef<HTMLDivElement>(null);
+  const sourcesChartRef = useRef<HTMLDivElement>(null);
+  const trendsChartRef = useRef<HTMLDivElement>(null);
+  const tagsChartRef = useRef<HTMLDivElement>(null);
   
   const handleDownloadReport = () => {
     toast.success("Generating insights report", { 
@@ -31,6 +38,28 @@ const Insights = () => {
       link.download = `aigen_insights_report_${new Date().toISOString().split('T')[0]}.pdf`;
       link.click();
     }, 1500);
+  };
+  
+  const handleDownloadChart = (chartRef: React.RefObject<HTMLDivElement>, chartName: string) => {
+    if (chartRef.current) {
+      toast.success("Generating chart image", {
+        description: "Your chart will be downloaded shortly"
+      });
+      
+      toPng(chartRef.current, { quality: 0.95 })
+        .then((dataUrl) => {
+          const link = document.createElement('a');
+          link.download = `aigen_${chartName.toLowerCase().replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.png`;
+          link.href = dataUrl;
+          link.click();
+        })
+        .catch((error) => {
+          toast.error("Failed to download chart", {
+            description: "Please try again later"
+          });
+          console.error("Error downloading chart:", error);
+        });
+    }
   };
   
   return (
@@ -84,14 +113,20 @@ const Insights = () => {
           
           <TabsContent value="categories">
             <Card>
-              <CardHeader>
-                <CardTitle>AI Categories Distribution</CardTitle>
-                <CardDescription>
-                  Breakdown of AI updates by category
-                </CardDescription>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <div>
+                  <CardTitle>AI Categories Distribution</CardTitle>
+                  <CardDescription>
+                    Breakdown of AI updates by category
+                  </CardDescription>
+                </div>
+                <Button variant="outline" size="sm" onClick={() => handleDownloadChart(categoriesChartRef, "Categories")}>
+                  <Download className="h-4 w-4 mr-2" />
+                  Download Chart
+                </Button>
               </CardHeader>
-              <CardContent className="px-2">
-                <div className="h-[400px]">
+              <CardContent className="px-2 pt-4">
+                <div className="h-[400px]" ref={categoriesChartRef}>
                   <BarChart
                     data={categoryDistribution}
                     index="name"
@@ -107,14 +142,20 @@ const Insights = () => {
           
           <TabsContent value="sources">
             <Card>
-              <CardHeader>
-                <CardTitle>AI Source Distribution</CardTitle>
-                <CardDescription>
-                  Breakdown of AI updates by source platform
-                </CardDescription>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <div>
+                  <CardTitle>AI Source Distribution</CardTitle>
+                  <CardDescription>
+                    Breakdown of AI updates by source platform
+                  </CardDescription>
+                </div>
+                <Button variant="outline" size="sm" onClick={() => handleDownloadChart(sourcesChartRef, "Sources")}>
+                  <Download className="h-4 w-4 mr-2" />
+                  Download Chart
+                </Button>
               </CardHeader>
-              <CardContent className="px-2">
-                <div className="h-[400px]">
+              <CardContent className="px-2 pt-4">
+                <div className="h-[400px]" ref={sourcesChartRef}>
                   <PieChart
                     data={sourceDistribution}
                     index="name"
@@ -129,14 +170,20 @@ const Insights = () => {
           
           <TabsContent value="trends">
             <Card>
-              <CardHeader>
-                <CardTitle>Weekly AI Updates Trend</CardTitle>
-                <CardDescription>
-                  Number of new AI updates per week
-                </CardDescription>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <div>
+                  <CardTitle>Weekly AI Updates Trend</CardTitle>
+                  <CardDescription>
+                    Number of new AI updates per week
+                  </CardDescription>
+                </div>
+                <Button variant="outline" size="sm" onClick={() => handleDownloadChart(trendsChartRef, "Trends")}>
+                  <Download className="h-4 w-4 mr-2" />
+                  Download Chart
+                </Button>
               </CardHeader>
-              <CardContent className="px-2">
-                <div className="h-[400px]">
+              <CardContent className="px-2 pt-4">
+                <div className="h-[400px]" ref={trendsChartRef}>
                   <LineChart
                     data={weeklyTrends}
                     index="week"
@@ -152,14 +199,20 @@ const Insights = () => {
           
           <TabsContent value="tags">
             <Card>
-              <CardHeader>
-                <CardTitle>Most Popular Tags</CardTitle>
-                <CardDescription>
-                  Frequency of tags across all AI updates
-                </CardDescription>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <div>
+                  <CardTitle>Most Popular Tags</CardTitle>
+                  <CardDescription>
+                    Frequency of tags across all AI updates
+                  </CardDescription>
+                </div>
+                <Button variant="outline" size="sm" onClick={() => handleDownloadChart(tagsChartRef, "Tags")}>
+                  <Download className="h-4 w-4 mr-2" />
+                  Download Chart
+                </Button>
               </CardHeader>
-              <CardContent className="px-2">
-                <div className="h-[400px]">
+              <CardContent className="px-2 pt-4">
+                <div className="h-[400px]" ref={tagsChartRef}>
                   <BarChart
                     data={popularTags}
                     index="name"

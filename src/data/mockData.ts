@@ -166,7 +166,7 @@ export const categoryDistribution: CategoryCount[] = [
 
 export interface SourceDistribution {
   name: string;
-  value: number;
+  count: number;  // Changed from 'value' to 'count' to match usage
 }
 
 export const sourceDistribution: SourceDistribution[] = [
