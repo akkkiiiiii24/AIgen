@@ -7,7 +7,7 @@ Stay ahead of the curve in the ever-evolving world of Artificial Intelligence wi
 ## 📽 Preview
 
 <!-- Add your app demo screenshot or video here -->
-![Demo Screenshot](https://via.placeholder.com/800x400.png?text=AI-gen+Demo)
+
 
 ---
 
