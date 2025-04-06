@@ -7,13 +7,14 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FileText, Link as LinkIcon, Upload, Volume2, ArrowRight } from "lucide-react";
+import { FileText, Link as LinkIcon, Upload, Volume2, ArrowRight, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 const Summarizer = () => {
   const [url, setUrl] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [summaryGenerated, setSummaryGenerated] = useState(false);
+  const [fileUploaded, setFileUploaded] = useState<File | null>(null);
   
   const handleUrlSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,8 +33,61 @@ const Summarizer = () => {
     }, 2000);
   };
   
-  const handleFileUpload = () => {
-    toast.info("File upload functionality would be implemented here");
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    // Check file type
+    const validTypes = ['application/pdf', 'text/plain'];
+    if (!validTypes.includes(file.type)) {
+      toast.error("Invalid file type", {
+        description: "Please upload a PDF or TXT file"
+      });
+      return;
+    }
+    
+    // Check file size (max 20MB)
+    if (file.size > 20 * 1024 * 1024) {
+      toast.error("File too large", {
+        description: "Maximum file size is 20MB"
+      });
+      return;
+    }
+    
+    setFileUploaded(file);
+    toast.info(`File "${file.name}" selected`, {
+      description: "Click 'Generate Summary' to process"
+    });
+  };
+  
+  const handleProcessFile = () => {
+    if (!fileUploaded) {
+      toast.error("Please select a file first");
+      return;
+    }
+    
+    setIsGenerating(true);
+    
+    // Simulate API call
+    setTimeout(() => {
+      setIsGenerating(false);
+      setSummaryGenerated(true);
+      toast.success("File processed and summary generated!");
+    }, 2500);
+  };
+  
+  const handleListenToSummary = () => {
+    toast.info("Text-to-speech started", {
+      description: "Your summary is being read aloud"
+    });
+  };
+  
+  const handleCopyToClipboard = () => {
+    const summaryText = document.querySelector('.summary-text')?.textContent;
+    if (summaryText) {
+      navigator.clipboard.writeText(summaryText);
+      toast.success("Summary copied to clipboard");
+    }
   };
   
   const samplePrompts = [
@@ -86,7 +140,12 @@ const Summarizer = () => {
                           className="bg-gradient-ai hover:opacity-90 transition-opacity"
                           disabled={isGenerating}
                         >
-                          {isGenerating ? "Generating..." : "Summarize"}
+                          {isGenerating ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Generating...
+                            </>
+                          ) : "Summarize"}
                         </Button>
                       </div>
                     </div>
@@ -102,12 +161,44 @@ const Summarizer = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="grid gap-4">
-                    <div className="border border-dashed rounded-lg flex flex-col items-center justify-center p-10 cursor-pointer hover:bg-muted/50 transition-colors" onClick={handleFileUpload}>
-                      <Upload className="h-10 w-10 text-muted-foreground mb-4" />
-                      <p className="font-medium">Click to upload or drag and drop</p>
-                      <p className="text-sm text-muted-foreground">PDF, TXT (max 20MB)</p>
-                    </div>
-                    <Button onClick={handleFileUpload}>Select File</Button>
+                    <label 
+                      className="border border-dashed rounded-lg flex flex-col items-center justify-center p-10 cursor-pointer hover:bg-muted/50 transition-colors"
+                      htmlFor="file-upload"
+                    >
+                      {fileUploaded ? (
+                        <>
+                          <FileText className="h-10 w-10 text-primary mb-4" />
+                          <p className="font-medium">{fileUploaded.name}</p>
+                          <p className="text-sm text-muted-foreground">{(fileUploaded.size / 1024 / 1024).toFixed(2)} MB</p>
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="h-10 w-10 text-muted-foreground mb-4" />
+                          <p className="font-medium">Click to upload or drag and drop</p>
+                          <p className="text-sm text-muted-foreground">PDF, TXT (max 20MB)</p>
+                        </>
+                      )}
+                      <input 
+                        id="file-upload" 
+                        type="file" 
+                        className="hidden" 
+                        accept=".pdf,.txt,application/pdf,text/plain"
+                        onChange={handleFileUpload}
+                      />
+                    </label>
+                    
+                    <Button 
+                      onClick={handleProcessFile}
+                      disabled={!fileUploaded || isGenerating}
+                      className={fileUploaded ? "bg-gradient-ai" : ""}
+                    >
+                      {isGenerating ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Processing...
+                        </>
+                      ) : "Generate Summary"}
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
@@ -122,7 +213,7 @@ const Summarizer = () => {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <Textarea
-                    className="min-h-[200px] resize-none"
+                    className="min-h-[200px] resize-none summary-text"
                     value="This research paper introduces a novel approach to fine-tuning large language models that significantly reduces computational requirements while maintaining performance comparable to full fine-tuning. The authors propose a parameter-efficient transfer learning method that selectively updates only critical components of the model architecture.
 
 Key findings include:
@@ -136,11 +227,21 @@ The method works by identifying and updating only the most influential parameter
                   />
                   
                   <div className="flex justify-between items-center">
-                    <Button variant="outline" size="sm" className="flex items-center gap-1">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="flex items-center gap-1"
+                      onClick={handleCopyToClipboard}
+                    >
                       <FileText className="h-4 w-4" />
                       Copy to clipboard
                     </Button>
-                    <Button variant="outline" size="sm" className="flex items-center gap-1">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="flex items-center gap-1"
+                      onClick={handleListenToSummary}
+                    >
                       <Volume2 className="h-4 w-4" />
                       Listen
                     </Button>

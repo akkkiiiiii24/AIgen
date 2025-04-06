@@ -1,19 +1,75 @@
 
+import { useState } from "react";
 import { PageLayout } from "@/components/Layout/PageLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { categoryDistribution, sourceDistribution, weeklyTrends, popularTags } from "@/data/mockData";
 import { BarChart, PieChart, LineChart } from "@/components/ui/chart";
+import { Button } from "@/components/ui/button";
+import { Download, Calendar } from "lucide-react";
+import { toast } from "sonner";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 
 const Insights = () => {
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+  const [timeRange, setTimeRange] = useState<"day" | "week" | "month" | "year">("week");
+  
+  const handleDownloadReport = () => {
+    toast.success("Generating insights report", { 
+      description: "Your report will be downloaded shortly" 
+    });
+    
+    // Simulate download after a delay
+    setTimeout(() => {
+      const link = document.createElement('a');
+      link.href = '#';
+      link.download = `aigen_insights_report_${new Date().toISOString().split('T')[0]}.pdf`;
+      link.click();
+    }, 1500);
+  };
+  
   return (
     <PageLayout>
       <div className="container py-8 md:py-12">
-        <div className="space-y-2">
-          <h1 className="text-3xl font-bold tracking-tight">AI Insights & Trends</h1>
-          <p className="text-muted-foreground">
-            Visualize and analyze the latest AI trends and statistics
-          </p>
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center space-y-4 md:space-y-0 mb-8">
+          <div className="space-y-2">
+            <h1 className="text-3xl font-bold tracking-tight">AI Insights & Trends</h1>
+            <p className="text-muted-foreground">
+              Visualize and analyze the latest AI trends and statistics
+            </p>
+          </div>
+          
+          <div className="flex flex-col sm:flex-row gap-2">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="w-[180px] flex gap-2 justify-between">
+                  <Calendar className="h-4 w-4" />
+                  {selectedDate ? selectedDate.toLocaleDateString() : "Pick date"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0">
+                <CalendarComponent
+                  mode="single"
+                  selected={selectedDate}
+                  onSelect={setSelectedDate}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+            
+            <Button 
+              className="bg-gradient-ai flex gap-2"
+              onClick={handleDownloadReport}
+            >
+              <Download className="h-4 w-4" />
+              Download Report
+            </Button>
+          </div>
         </div>
         
         <Tabs defaultValue="categories" className="mt-8">
