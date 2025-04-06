@@ -3,10 +3,16 @@ import { useState, useRef } from "react";
 import { PageLayout } from "@/components/Layout/PageLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { categoryDistribution, sourceDistribution, weeklyTrends, popularTags } from "@/data/mockData";
+import { 
+  categoryDistribution, 
+  sourceDistribution, 
+  weeklyTrends, 
+  popularTags, 
+  chartColors 
+} from "@/data/mockData";
 import { BarChart, PieChart, LineChart } from "@/components/ui/chart";
 import { Button } from "@/components/ui/button";
-import { Download, Calendar } from "lucide-react";
+import { Download, Calendar, FileDown } from "lucide-react";
 import { toast } from "sonner";
 import {
   Popover,
@@ -15,29 +21,73 @@ import {
 } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { toPng } from "html-to-image";
+import { jsPDF } from "jspdf";
 
 const Insights = () => {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [timeRange, setTimeRange] = useState<"day" | "week" | "month" | "year">("week");
   
-  // Create refs for each chart container
+  // Create refs for each chart container and the entire report
   const categoriesChartRef = useRef<HTMLDivElement>(null);
   const sourcesChartRef = useRef<HTMLDivElement>(null);
   const trendsChartRef = useRef<HTMLDivElement>(null);
   const tagsChartRef = useRef<HTMLDivElement>(null);
+  const fullReportRef = useRef<HTMLDivElement>(null);
+
+  // Handle time range change
+  const handleTimeRangeChange = (range: "day" | "week" | "month" | "year") => {
+    setTimeRange(range);
+    toast.success(`Time range updated to ${range}`);
+  };
   
-  const handleDownloadReport = () => {
+  const handleDownloadReport = async () => {
     toast.success("Generating insights report", { 
       description: "Your report will be downloaded shortly" 
     });
     
-    // Simulate download after a delay
-    setTimeout(() => {
-      const link = document.createElement('a');
-      link.href = '#';
-      link.download = `aigen_insights_report_${new Date().toISOString().split('T')[0]}.pdf`;
-      link.click();
-    }, 1500);
+    if (fullReportRef.current) {
+      try {
+        // Create a new PDF document
+        const pdf = new jsPDF({
+          orientation: "portrait",
+          unit: "px",
+          format: [800, 1100]
+        });
+        
+        // Get the charts as images
+        const tabs = ["categories", "sources", "trends", "tags"];
+        const chartRefs = [categoriesChartRef, sourcesChartRef, trendsChartRef, tagsChartRef];
+        
+        pdf.setFontSize(24);
+        pdf.text("AIgen Insights Report", 40, 40);
+        pdf.setFontSize(12);
+        pdf.text(`Generated on: ${new Date().toLocaleDateString()}`, 40, 60);
+        pdf.text(`Report period: Last ${timeRange}`, 40, 80);
+        
+        let yPosition = 120;
+        
+        // Add each chart to the PDF
+        for (let i = 0; i < tabs.length; i++) {
+          if (chartRefs[i].current) {
+            const dataUrl = await toPng(chartRefs[i].current);
+            pdf.text(tabs[i].charAt(0).toUpperCase() + tabs[i].slice(1), 40, yPosition);
+            yPosition += 20;
+            pdf.addImage(dataUrl, "PNG", 40, yPosition, 500, 250);
+            yPosition += 280;
+          }
+        }
+        
+        // Save the PDF
+        pdf.save(`aigen_insights_report_${new Date().toISOString().split('T')[0]}.pdf`);
+        
+        toast.success("Report downloaded successfully");
+      } catch (error) {
+        console.error("Error generating PDF:", error);
+        toast.error("Failed to generate report", {
+          description: "Please try again later"
+        });
+      }
+    }
   };
   
   const handleDownloadChart = (chartRef: React.RefObject<HTMLDivElement>, chartName: string) => {
@@ -64,7 +114,7 @@ const Insights = () => {
   
   return (
     <PageLayout>
-      <div className="container py-8 md:py-12">
+      <div className="container py-8 md:py-12" ref={fullReportRef}>
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center space-y-4 md:space-y-0 mb-8">
           <div className="space-y-2">
             <h1 className="text-3xl font-bold tracking-tight">AI Insights & Trends</h1>
@@ -91,11 +141,42 @@ const Insights = () => {
               </PopoverContent>
             </Popover>
             
+            <div className="flex gap-2">
+              <Button
+                variant={timeRange === "day" ? "default" : "outline"}
+                onClick={() => handleTimeRangeChange("day")}
+                className="px-3"
+              >
+                Day
+              </Button>
+              <Button
+                variant={timeRange === "week" ? "default" : "outline"}
+                onClick={() => handleTimeRangeChange("week")}
+                className="px-3"
+              >
+                Week
+              </Button>
+              <Button
+                variant={timeRange === "month" ? "default" : "outline"}
+                onClick={() => handleTimeRangeChange("month")}
+                className="px-3"
+              >
+                Month
+              </Button>
+              <Button
+                variant={timeRange === "year" ? "default" : "outline"}
+                onClick={() => handleTimeRangeChange("year")}
+                className="px-3"
+              >
+                Year
+              </Button>
+            </div>
+            
             <Button 
               className="bg-gradient-ai flex gap-2"
               onClick={handleDownloadReport}
             >
-              <Download className="h-4 w-4" />
+              <FileDown className="h-4 w-4" />
               Download Report
             </Button>
           </div>
@@ -112,7 +193,7 @@ const Insights = () => {
           </div>
           
           <TabsContent value="categories">
-            <Card>
+            <Card className="bg-card shadow-lg border-border/50">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <div>
                   <CardTitle>AI Categories Distribution</CardTitle>
@@ -125,13 +206,16 @@ const Insights = () => {
                   Download Chart
                 </Button>
               </CardHeader>
-              <CardContent className="px-2 pt-4">
-                <div className="h-[400px]" ref={categoriesChartRef}>
+              <CardContent className="px-2 pt-6 pb-6">
+                <div 
+                  className="h-[400px] bg-white dark:bg-black rounded-md p-4" 
+                  ref={categoriesChartRef}
+                >
                   <BarChart
                     data={categoryDistribution}
                     index="name"
                     categories={["count"]}
-                    colors={["#833eff"]}
+                    colors={chartColors.primary}
                     valueFormatter={(value) => `${value} repos`}
                     yAxisWidth={48}
                   />
@@ -141,7 +225,7 @@ const Insights = () => {
           </TabsContent>
           
           <TabsContent value="sources">
-            <Card>
+            <Card className="bg-card shadow-lg border-border/50">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <div>
                   <CardTitle>AI Source Distribution</CardTitle>
@@ -154,13 +238,16 @@ const Insights = () => {
                   Download Chart
                 </Button>
               </CardHeader>
-              <CardContent className="px-2 pt-4">
-                <div className="h-[400px]" ref={sourcesChartRef}>
+              <CardContent className="px-2 pt-6 pb-6">
+                <div 
+                  className="h-[400px] bg-white dark:bg-black rounded-md p-4" 
+                  ref={sourcesChartRef}
+                >
                   <PieChart
                     data={sourceDistribution}
                     index="name"
                     categories={["count"]}
-                    colors={["#833eff", "#5310c0", "#9f75ff"]}
+                    colors={chartColors.secondary}
                     valueFormatter={(value) => `${value} repos`}
                   />
                 </div>
@@ -169,7 +256,7 @@ const Insights = () => {
           </TabsContent>
           
           <TabsContent value="trends">
-            <Card>
+            <Card className="bg-card shadow-lg border-border/50">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <div>
                   <CardTitle>Weekly AI Updates Trend</CardTitle>
@@ -182,13 +269,16 @@ const Insights = () => {
                   Download Chart
                 </Button>
               </CardHeader>
-              <CardContent className="px-2 pt-4">
-                <div className="h-[400px]" ref={trendsChartRef}>
+              <CardContent className="px-2 pt-6 pb-6">
+                <div 
+                  className="h-[400px] bg-white dark:bg-black rounded-md p-4" 
+                  ref={trendsChartRef}
+                >
                   <LineChart
                     data={weeklyTrends}
                     index="week"
                     categories={["count"]}
-                    colors={["#833eff"]}
+                    colors={chartColors.primary}
                     valueFormatter={(value) => `${value} updates`}
                     yAxisWidth={48}
                   />
@@ -198,7 +288,7 @@ const Insights = () => {
           </TabsContent>
           
           <TabsContent value="tags">
-            <Card>
+            <Card className="bg-card shadow-lg border-border/50">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <div>
                   <CardTitle>Most Popular Tags</CardTitle>
@@ -211,13 +301,16 @@ const Insights = () => {
                   Download Chart
                 </Button>
               </CardHeader>
-              <CardContent className="px-2 pt-4">
-                <div className="h-[400px]" ref={tagsChartRef}>
+              <CardContent className="px-2 pt-6 pb-6">
+                <div 
+                  className="h-[400px] bg-white dark:bg-black rounded-md p-4" 
+                  ref={tagsChartRef}
+                >
                   <BarChart
                     data={popularTags}
                     index="name"
                     categories={["count"]}
-                    colors={["#833eff"]}
+                    colors={chartColors.accent}
                     valueFormatter={(value) => `${value} occurrences`}
                     yAxisWidth={48}
                   />
@@ -228,7 +321,7 @@ const Insights = () => {
         </Tabs>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-12">
-          <Card>
+          <Card className="bg-card shadow-lg border-border/50">
             <CardHeader>
               <CardTitle>AI Growth Insights</CardTitle>
               <CardDescription>Key metrics about AI industry growth</CardDescription>
@@ -259,7 +352,7 @@ const Insights = () => {
             </CardContent>
           </Card>
           
-          <Card>
+          <Card className="bg-card shadow-lg border-border/50">
             <CardHeader>
               <CardTitle>AI Technology Adoption</CardTitle>
               <CardDescription>Tracking industry adoption of AI technologies</CardDescription>

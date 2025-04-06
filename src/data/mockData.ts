@@ -166,7 +166,7 @@ export const categoryDistribution: CategoryCount[] = [
 
 export interface SourceDistribution {
   name: string;
-  count: number;  // Changed from 'value' to 'count' to match usage
+  count: number;
 }
 
 export const sourceDistribution: SourceDistribution[] = [
@@ -206,3 +206,12 @@ export const popularTags: PopularTag[] = [
   { name: 'reasoning', count: 18 },
   { name: 'diffusion', count: 22 }
 ];
+
+// Chart colors for consistent display
+export const chartColors = {
+  primary: ['#9b87f5', '#7E69AB', '#6E59A5', '#5c4c9f', '#4c3e88', '#3c3171'],
+  secondary: ['#D6BCFA', '#C4B5FD', '#A78BFA', '#8B5CF6', '#7C3AED', '#6D28D9'],
+  accent: ['#FCD34D', '#FBBF24', '#F59E0B', '#D97706', '#B45309', '#92400E'],
+  gradient: 'linear-gradient(90deg, hsla(277, 75%, 84%, 1) 0%, hsla(297, 50%, 51%, 1) 100%)'
+};
+
