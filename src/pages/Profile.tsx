@@ -9,13 +9,16 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
 import { Switch } from "@/components/ui/switch";
-import { User, Mail, Bell, Download } from "lucide-react";
+import { User, Mail, Bell, Download, LogOut } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const Profile = () => {
   const [email, setEmail] = useState("john.doe@example.com");
   const [name, setName] = useState("John Doe");
   const [digests, setDigests] = useState<"daily" | "weekly" | "monthly">("weekly");
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const navigate = useNavigate();
   
   const handleSaveProfile = (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,6 +33,16 @@ const Profile = () => {
     toast.success("Your data has been exported", {
       description: "Check your email for the download link"
     });
+  };
+  
+  const handleLogout = () => {
+    setIsLoggingOut(true);
+    
+    // Simulate logout process
+    setTimeout(() => {
+      toast.success("Successfully logged out");
+      navigate("/login");
+    }, 1000);
   };
   
   return (
@@ -58,13 +71,60 @@ const Profile = () => {
                   </div>
                 </div>
               </CardContent>
-              <CardFooter>
+              <CardFooter className="flex flex-col space-y-2">
                 <Button 
                   variant="outline" 
                   className="w-full"
                   onClick={handleSubscriptionManage}
                 >
                   Manage Subscription
+                </Button>
+                <Button 
+                  variant="destructive" 
+                  className="w-full flex items-center justify-center gap-2"
+                  onClick={handleLogout}
+                  disabled={isLoggingOut}
+                >
+                  {isLoggingOut ? (
+                    "Logging out..."
+                  ) : (
+                    <>
+                      <LogOut className="h-4 w-4" />
+                      Logout
+                    </>
+                  )}
+                </Button>
+              </CardFooter>
+            </Card>
+            
+            {/* Authentication Info Card */}
+            <Card className="mt-4">
+              <CardHeader>
+                <CardTitle className="text-sm">Authentication Info</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span>Provider</span>
+                    <span className="font-medium">GitHub</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Last Login</span>
+                    <span>{new Date().toLocaleDateString()}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Sessions</span>
+                    <span>1 active</span>
+                  </div>
+                </div>
+              </CardContent>
+              <CardFooter>
+                <Button 
+                  variant="outline" 
+                  className="w-full text-xs"
+                  onClick={() => toast.info("This would open account security settings")}
+                >
+                  Manage Security Settings
                 </Button>
               </CardFooter>
             </Card>

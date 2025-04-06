@@ -1,5 +1,5 @@
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { PageLayout } from "@/components/Layout/PageLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -10,9 +10,9 @@ import {
   popularTags, 
   chartColors 
 } from "@/data/mockData";
-import { BarChart, PieChart, LineChart } from "@/components/ui/chart";
+import { LineChart, PieChart } from "@/components/ui/chart";
 import { Button } from "@/components/ui/button";
-import { Download, Calendar, FileDown } from "lucide-react";
+import { Download, Calendar, FileDown, ArrowDownToLine } from "lucide-react";
 import { toast } from "sonner";
 import {
   Popover,
@@ -26,6 +26,7 @@ import { jsPDF } from "jspdf";
 const Insights = () => {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [timeRange, setTimeRange] = useState<"day" | "week" | "month" | "year">("week");
+  const [filteredData, setFilteredData] = useState(weeklyTrends);
   
   // Create refs for each chart container and the entire report
   const categoriesChartRef = useRef<HTMLDivElement>(null);
@@ -33,6 +34,45 @@ const Insights = () => {
   const trendsChartRef = useRef<HTMLDivElement>(null);
   const tagsChartRef = useRef<HTMLDivElement>(null);
   const fullReportRef = useRef<HTMLDivElement>(null);
+
+  // Apply time range filter to data
+  useEffect(() => {
+    // In a real app, this would fetch different data based on the time range
+    // For demo purposes, we'll just simulate different data
+    let filtered = [...weeklyTrends];
+    if (timeRange === "day") {
+      filtered = weeklyTrends.slice(6, 8); // Last two data points
+    } else if (timeRange === "week") {
+      filtered = weeklyTrends; // All data
+    } else if (timeRange === "month") {
+      // Add more data points for month view
+      filtered = [
+        ...weeklyTrends,
+        { week: 'Week 9', count: 44 },
+        { week: 'Week 10', count: 47 },
+        { week: 'Week 11', count: 43 },
+        { week: 'Week 12', count: 50 }
+      ];
+    } else if (timeRange === "year") {
+      // Use month labels for year view
+      filtered = [
+        { week: 'Jan', count: 28 },
+        { week: 'Feb', count: 32 },
+        { week: 'Mar', count: 38 },
+        { week: 'Apr', count: 42 },
+        { week: 'May', count: 45 },
+        { week: 'Jun', count: 50 },
+        { week: 'Jul', count: 48 },
+        { week: 'Aug', count: 52 },
+        { week: 'Sep', count: 60 },
+        { week: 'Oct', count: 58 },
+        { week: 'Nov', count: 62 },
+        { week: 'Dec', count: 68 }
+      ];
+    }
+    
+    setFilteredData(filtered);
+  }, [timeRange]);
 
   // Handle time range change
   const handleTimeRangeChange = (range: "day" | "week" | "month" | "year") => {
@@ -90,25 +130,39 @@ const Insights = () => {
     }
   };
   
-  const handleDownloadChart = (chartRef: React.RefObject<HTMLDivElement>, chartName: string) => {
+  const handleDownloadChart = async (chartRef: React.RefObject<HTMLDivElement>, chartName: string) => {
     if (chartRef.current) {
-      toast.success("Generating chart image", {
+      toast.success("Generating chart PDF", {
         description: "Your chart will be downloaded shortly"
       });
       
-      toPng(chartRef.current, { quality: 0.95 })
-        .then((dataUrl) => {
-          const link = document.createElement('a');
-          link.download = `aigen_${chartName.toLowerCase().replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.png`;
-          link.href = dataUrl;
-          link.click();
-        })
-        .catch((error) => {
-          toast.error("Failed to download chart", {
-            description: "Please try again later"
-          });
-          console.error("Error downloading chart:", error);
+      try {
+        const dataUrl = await toPng(chartRef.current, { quality: 0.95 });
+        
+        // Create PDF
+        const pdf = new jsPDF({
+          orientation: "landscape",
+          unit: "px",
+          format: [600, 400]
         });
+        
+        pdf.setFontSize(18);
+        pdf.text(`AIgen - ${chartName} Chart`, 40, 30);
+        pdf.setFontSize(10);
+        pdf.text(`Generated on: ${new Date().toLocaleDateString()}`, 40, 45);
+        pdf.text(`Time period: ${timeRange}`, 40, 55);
+        
+        pdf.addImage(dataUrl, "PNG", 40, 70, 520, 280);
+        
+        pdf.save(`aigen_${chartName.toLowerCase().replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`);
+        
+        toast.success("Chart PDF downloaded successfully");
+      } catch (error) {
+        console.error("Error downloading chart:", error);
+        toast.error("Failed to download chart", {
+          description: "Please try again later"
+        });
+      }
     }
   };
   
@@ -187,7 +241,7 @@ const Insights = () => {
             <TabsList>
               <TabsTrigger value="categories">Categories</TabsTrigger>
               <TabsTrigger value="sources">Sources</TabsTrigger>
-              <TabsTrigger value="trends">Weekly Trends</TabsTrigger>
+              <TabsTrigger value="trends">Trends</TabsTrigger>
               <TabsTrigger value="tags">Popular Tags</TabsTrigger>
             </TabsList>
           </div>
@@ -201,9 +255,14 @@ const Insights = () => {
                     Breakdown of AI updates by category
                   </CardDescription>
                 </div>
-                <Button variant="outline" size="sm" onClick={() => handleDownloadChart(categoriesChartRef, "Categories")}>
-                  <Download className="h-4 w-4 mr-2" />
-                  Download Chart
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => handleDownloadChart(categoriesChartRef, "Categories")}
+                  className="flex gap-2"
+                >
+                  <ArrowDownToLine className="h-4 w-4" />
+                  Download PDF
                 </Button>
               </CardHeader>
               <CardContent className="px-2 pt-6 pb-6">
@@ -211,11 +270,11 @@ const Insights = () => {
                   className="h-[400px] bg-white dark:bg-black rounded-md p-4" 
                   ref={categoriesChartRef}
                 >
-                  <BarChart
+                  <LineChart
                     data={categoryDistribution}
                     index="name"
                     categories={["count"]}
-                    colors={chartColors.primary}
+                    colors={['#9b87f5', '#5310c0']}
                     valueFormatter={(value) => `${value} repos`}
                     yAxisWidth={48}
                   />
@@ -233,9 +292,14 @@ const Insights = () => {
                     Breakdown of AI updates by source platform
                   </CardDescription>
                 </div>
-                <Button variant="outline" size="sm" onClick={() => handleDownloadChart(sourcesChartRef, "Sources")}>
-                  <Download className="h-4 w-4 mr-2" />
-                  Download Chart
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => handleDownloadChart(sourcesChartRef, "Sources")}
+                  className="flex gap-2"
+                >
+                  <ArrowDownToLine className="h-4 w-4" />
+                  Download PDF
                 </Button>
               </CardHeader>
               <CardContent className="px-2 pt-6 pb-6">
@@ -247,7 +311,7 @@ const Insights = () => {
                     data={sourceDistribution}
                     index="name"
                     categories={["count"]}
-                    colors={chartColors.secondary}
+                    colors={['#D6BCFA', '#C4B5FD', '#A78BFA', '#8B5CF6', '#7C3AED']}
                     valueFormatter={(value) => `${value} repos`}
                   />
                 </div>
@@ -259,14 +323,19 @@ const Insights = () => {
             <Card className="bg-card shadow-lg border-border/50">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <div>
-                  <CardTitle>Weekly AI Updates Trend</CardTitle>
+                  <CardTitle>AI Updates Trend</CardTitle>
                   <CardDescription>
-                    Number of new AI updates per week
+                    Number of new AI updates over time
                   </CardDescription>
                 </div>
-                <Button variant="outline" size="sm" onClick={() => handleDownloadChart(trendsChartRef, "Trends")}>
-                  <Download className="h-4 w-4 mr-2" />
-                  Download Chart
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => handleDownloadChart(trendsChartRef, "Trends")}
+                  className="flex gap-2"
+                >
+                  <ArrowDownToLine className="h-4 w-4" />
+                  Download PDF
                 </Button>
               </CardHeader>
               <CardContent className="px-2 pt-6 pb-6">
@@ -275,10 +344,10 @@ const Insights = () => {
                   ref={trendsChartRef}
                 >
                   <LineChart
-                    data={weeklyTrends}
+                    data={filteredData}
                     index="week"
                     categories={["count"]}
-                    colors={chartColors.primary}
+                    colors={['#9b87f5', '#5310c0']}
                     valueFormatter={(value) => `${value} updates`}
                     yAxisWidth={48}
                   />
@@ -296,9 +365,14 @@ const Insights = () => {
                     Frequency of tags across all AI updates
                   </CardDescription>
                 </div>
-                <Button variant="outline" size="sm" onClick={() => handleDownloadChart(tagsChartRef, "Tags")}>
-                  <Download className="h-4 w-4 mr-2" />
-                  Download Chart
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => handleDownloadChart(tagsChartRef, "Tags")}
+                  className="flex gap-2"
+                >
+                  <ArrowDownToLine className="h-4 w-4" />
+                  Download PDF
                 </Button>
               </CardHeader>
               <CardContent className="px-2 pt-6 pb-6">
@@ -306,11 +380,11 @@ const Insights = () => {
                   className="h-[400px] bg-white dark:bg-black rounded-md p-4" 
                   ref={tagsChartRef}
                 >
-                  <BarChart
+                  <LineChart
                     data={popularTags}
                     index="name"
                     categories={["count"]}
-                    colors={chartColors.accent}
+                    colors={['#FCD34D', '#F59E0B']}
                     valueFormatter={(value) => `${value} occurrences`}
                     yAxisWidth={48}
                   />
