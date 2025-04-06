@@ -2,12 +2,17 @@
 
 Stay ahead of the curve in the ever-evolving world of Artificial Intelligence with *AI-gen* — a smart, centralized platform that curates, summarizes, and visualizes the latest developments in AI from top platforms like *GitHub, **Hugging Face, and **ArXiv*.
 
+
+*THE LINK TO OUR WEBSITE IS:* https://gotoaigen.onrender.com/
+
+PLease wait for 15-30 sec for the website to open as it goes to sleep mode. (We are currently working on it)
+
 ---
 
 ## 📽 Preview
 
 <!-- Add your app demo screenshot or video here -->
-
+![Demo Screenshot](https://via.placeholder.com/800x400.png?text=AI-gen+Demo)
 
 ---
 
@@ -105,7 +110,8 @@ Stay ahead of the curve in the ever-evolving world of Artificial Intelligence wi
 
 ## 💰 Pricing & Subscription
 
-![AIgen Pricing Page](./your-pricing-screenshot.png)
+![image](https://github.com/user-attachments/assets/26be00e1-ad21-4d14-8a56-c0eb4f49d53a)
+
 
 ---
 
@@ -133,7 +139,8 @@ Stay ahead of the curve in the ever-evolving world of Artificial Intelligence wi
 
 ## 📘 About AIgen
 
-![AIgen About Page](./your-about-screenshot.png)
+![image](https://github.com/user-attachments/assets/c852c98f-f82f-401d-a64f-3d92819c075e)
+
 
 ---
 
@@ -149,7 +156,7 @@ Stay ahead of the curve in the ever-evolving world of Artificial Intelligence wi
 
 ## 🤖 AI Research Assistant
 
-![AIgen Chatbot Page](./your-chatbot-screenshot.png)
+![image](https://github.com/user-attachments/assets/0c61c002-2ef4-41cc-9afb-80ac66ec8a35)
 
 ---
 
@@ -177,3 +184,4 @@ Stay ahead of the curve in the ever-evolving world of Artificial Intelligence wi
 ## ✅ Conclusion  
 *AIgen is your one-stop destination to stay ahead in the fast-evolving world of AI — smarter, faster, and easier than ever.*
 
+##Thank You <3
